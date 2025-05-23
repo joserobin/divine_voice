@@ -1,36 +1,36 @@
 import streamlit as st
-import pandas as pd
-from openai import OpenAI
-from bible_mood_matcher import match_verses_by_mood
-import os
+from bible_mood_matcher import load_bible_data, match_verses_by_mood
 
-# Load the Excel file
-@st.cache_data
-def load_data():
-    df = pd.read_excel("englishBible.xlsx")
-    return df
+st.set_page_config(page_title="Divine Voice", layout="centered")
 
-df = load_data()
+st.title("📖 Divine Voice – Personalized Bible Verse App")
 
-# UI Elements
-st.title("📖 Divine Voice: Bible Verse Generator")
-st.markdown("---")
+# Input fields
+name = st.text_input("👤 Your Name")
 
-name = st.text_input("🙏 Your Name")
-age_group = st.selectbox("🎂 Age Group", ["Kids (5-10)", "Teen (10-15)", "Youth (15-25)", "Adult (25-50)", "Senior (50+)"])
-occupation = st.selectbox("💼 Occupation", ["Student", "Working Professional", "Homemaker", "Retired", "Other"])
-mood = st.selectbox("🧠 How are you feeling today?", ["Happy", "Sad", "Anxious", "Thankful", "Lonely", "Grateful", "Fearful", "Tired", "Excited"])
+age_group = st.selectbox("🎂 Age Group", ["5–10 (Kids)", "10–15 (Teen)", "15–25 (Youth)", "25–50 (Adult)", "50+ (Senior)"])
 
+occupation = st.selectbox("💼 Occupation", ["Student", "Working Professional", "Retired"])
+
+mood = st.selectbox(
+    "🧠 How are you feeling today?",
+    ["Peaceful", "Anxious", "Grateful", "Lonely", "Sad", "Joyful", "Lost", "Tired", "Hopeful", "Fearful", "Confused"]
+)
+
+# Load Bible Data
+try:
+    df, verse_col = load_bible_data("englishBible.xlsx")
+except Exception as e:
+    st.error(f"Failed to load Bible data: {e}")
+    st.stop()
+
+# Button to get verse
 if st.button("✨ Get a Bible Verse"):
-    if name and mood:
-        with st.spinner("Finding a verse just for you..."):
-            verses = match_verses_by_mood(mood, df)
-
-            if verses:
-                st.success(f"Dear {name}, here are some verses for you:")
-                for i, verse in enumerate(verses):
-                    st.markdown(f"**{i+1}.** {verse}")
-            else:
-                st.warning("Sorry, we couldn't find a matching verse. Try a different mood.")
-    else:
-        st.warning("Please enter your name and choose your mood.")
+    with st.spinner("Searching for a meaningful verse..."):
+        try:
+            verses = match_verses_by_mood(mood, df, verse_col)
+            st.success(f"Here are verses for you, {name or 'Friend'}:")
+            for i, verse in enumerate(verses, 1):
+                st.markdown(f"**{i}.** {verse}")
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")

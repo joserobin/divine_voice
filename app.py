@@ -1,56 +1,13 @@
-import streamlit as st
-import openai
+openai.lib._old_api.APIRemovedInV1: This app has encountered an error. The original error message is redacted to prevent data leaks. Full error details have been recorded in the logs (if you're on Streamlit Cloud, click on 'Manage app' in the lower right of your app).
+Traceback:
 
-# Set your OpenAI API key from Streamlit secrets
-openai.api_key = st.secrets["OPENAI_API_KEY"]
-
-st.title("📖 Divine Voice: Personalized Bible Verse Companion")
-
-st.markdown("This app shares Bible verses based on your age, mood, and life stage.")
-
-# --- Input Fields ---
-name = st.text_input("Your Name")
-
-age_group = st.selectbox("Your Age Group", ["5-10 (Kids)", "10-15 (Teen)", "15-25 (Youth)", "25-50 (Adult)", "50+ (Senior)"])
-
-occupation = st.selectbox("What best describes you?", ["Student", "Working Professional", "Retired", "Homemaker", "Other"])
-
-mood_options = ["Anxious", "Grateful", "Confused", "Sad", "Happy", "Lonely", "Hopeful", "Tired", "Motivated", "Other"]
-selected_mood = st.selectbox("How are you feeling right now?", mood_options)
-
-custom_mood = ""
-if selected_mood == "Other":
-    custom_mood = st.text_input("Please describe your current mood")
-
-# Final mood used in prompt
-final_mood = custom_mood if selected_mood == "Other" else selected_mood
-
-# --- Function to Get Bible Response ---
-def get_bible_response(name, age_group, occupation, mood):
-    prompt = (
-        f"The user is {name}, aged {age_group}, and is a {occupation}. "
-        f"They are currently feeling '{mood}'. Recommend a Bible verse suitable for them and explain it "
-        f"simply, offering hope and comfort based on their life stage."
-    )
-
+File "/mount/src/divine_voice/app.py", line 54, in <module>
+    output = get_bible_response(name, age_group, occupation, final_mood)
+File "/mount/src/divine_voice/app.py", line 36, in get_bible_response
     response = openai.ChatCompletion.create(
         model="gpt-4",
-        messages=[
-            {"role": "system", "content": "You are a wise and kind Bible teacher."},
-            {"role": "user", "content": prompt}
-        ],
-        max_tokens=500,
+    ...<5 lines>...
         temperature=0.8
     )
-
-    return response.choices[0].message.content
-
-# --- Submit Button ---
-if st.button("Get My Verse"):
-    if not name or not final_mood:
-        st.warning("Please complete all the required fields.")
-    else:
-        with st.spinner("Reflecting..."):
-            output = get_bible_response(name, age_group, occupation, final_mood)
-            st.subheader("📜 Your Personalized Bible Verse & Explanation")
-            st.write(output)
+File "/home/adminuser/venv/lib/python3.13/site-packages/openai/lib/_old_api.py", line 39, in __call__
+    raise APIRemovedInV1(symbol=self._symbol)

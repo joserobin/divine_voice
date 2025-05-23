@@ -1,52 +1,70 @@
 import streamlit as st
-import openai
-import os
+import speech_recognition as sr
+from openai import OpenAI
 
-# Set page configuration
-st.set_page_config(page_title="Divine Voice - Personalized Bible Wisdom")
+# Load OpenAI key from secrets
+client = OpenAI()
 
-# Title and subtitle
-st.title("📖 Divine Voice")
-st.subheader("Get personalized Bible verses with simple and powerful explanations.")
+# Set up app
+st.set_page_config(page_title="Divine Voice", layout="centered")
+st.title("📖 Divine Voice – Bible Verse Generator")
 
-# Get OpenAI API key from Streamlit secrets
-openai.api_key = st.secrets["OPENAI_API_KEY"]
+# User Input
+name = st.text_input("Enter your name:")
+age_group = st.selectbox("Select your age group:", ["Kids (5-10)", "Teen (10-15)", "Youth (15-25)", "Adult (25-50)", "Older Adult (50+)"])
+occupation = st.selectbox("What best describes you?", ["Student", "Working Professional", "Retired"])
+mood = st.text_input("What's your current mood or concern? (e.g., anxious, happy, confused)")
 
-# User form
-with st.form("user_form"):
-    name = st.text_input("👤 Enter your name")
-    age_group = st.selectbox("🎂 Select your age group", ["Kids (5–10)", "Teen (10–15)", "Youth (15–25)", "Adult (25–50)"])
-    occupation = st.selectbox("💼 You are a", ["Student", "Working Professional", "Retired"])
-    mood = st.selectbox("🧠 How are you feeling today?", ["Happy", "Anxious", "Sad", "Lonely", "Curious", "Thankful", "Depressed", "Lost", "Energetic", "Tired"])
-    submitted = st.form_submit_button("🙏 Get Verse")
+# Microphone input (optional)
+use_voice = st.toggle("🎙️ Use voice input")
 
-# GPT Function
+if use_voice:
+    st.info("Click the button and speak. Wait for transcription...")
+    if st.button("Start Recording"):
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            audio = recognizer.listen(source, timeout=5)
+        try:
+            mood = recognizer.recognize_google(audio)
+            st.success(f"You said: {mood}")
+        except sr.UnknownValueError:
+            st.error("Could not understand audio.")
+        except sr.RequestError:
+            st.error("Speech recognition service unavailable.")
+
+# Function to call GPT-4
 def get_bible_response(name, age_group, occupation, mood):
-    prompt = f"""
-You are a kind and wise Christian mentor.
+    prompt = (
+        f"My name is {name}. I am a {occupation} in the {age_group} group. "
+        f"My current mood or concern is: '{mood}'. Please suggest a Bible verse and explain it in an age-appropriate and easy-to-understand way."
+    )
 
-A person named {name}, who is a {occupation} in the {age_group} age group, is feeling {mood} today.
-
-1. Suggest a suitable Bible verse for them.
-2. Provide a short, emotionally resonant explanation that is easy to understand for their age and life situation.
-3. Keep the tone compassionate and uplifting.
-    """
-
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4",
         messages=[
-            {"role": "system", "content": "You are a helpful and loving Christian guide who explains Bible verses in an age-appropriate and compassionate way."},
-            {"role": "user", "content": prompt}
+            {
+                "role": "system",
+                "content": "You are a compassionate Christian guide who provides age-appropriate Bible verses and explanations."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
         ],
         temperature=0.8,
         max_tokens=500
     )
 
-    return response['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
-# Output Section
-if submitted:
-    with st.spinner("✨ Fetching divine wisdom..."):
-        result = get_bible_response(name, age_group, occupation, mood)
-    st.markdown("### 📜 Here's a verse and message for you:")
-    st.markdown(result)
+# Display result
+if st.button("🙏 Get Bible Verse and Explanation"):
+    if name and mood:
+        with st.spinner("Praying and finding the right verse..."):
+            result = get_bible_response(name, age_group, occupation, mood)
+            st.markdown("### 📜 Your Personalized Bible Message:")
+            st.write(result)
+    else:
+        st.warning("Please enter your name and mood.")
+
+# Optional: Add audio output with pyttsx3 (locally only)

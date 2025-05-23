@@ -3,18 +3,20 @@ import random
 
 def load_bible_data(file_path):
     """
-    Load the Bible data from the Excel file.
-    Automatically detects the column containing verse text.
-    Returns the DataFrame and the name of the verse column.
+    Load the Bible data and return DataFrame and the verse text column name.
     """
     df = pd.read_excel(file_path)
 
-    # Identify the column most likely containing the verse text
-    verse_col = None
-    for col in df.columns:
-        if "verse" in col.lower() or "text" in col.lower():
-            verse_col = col
-            break
+    # Check if "Text" column is present
+    if "Text" in df.columns:
+        verse_col = "Text"
+    else:
+        # Try to detect the verse text column
+        verse_col = None
+        for col in df.columns:
+            if "verse" in col.lower() or "text" in col.lower():
+                verse_col = col
+                break
 
     if not verse_col:
         raise ValueError("Could not find a column with verse text in the Excel file.")
@@ -25,14 +27,13 @@ def load_bible_data(file_path):
 def match_verses_by_mood(mood, df, verse_col):
     """
     Match Bible verses based on a mood keyword.
-    If no match is found, return random verses.
     """
-    # Case-insensitive search for mood in the verse text
-    matched = df[df[verse_col].str.lower().str.contains(mood.lower(), na=False)]
+    try:
+        matched = df[df[verse_col].str.lower().str.contains(mood.lower(), na=False)]
+    except KeyError as e:
+        raise KeyError(f"Column '{verse_col}' not found in DataFrame columns: {df.columns.tolist()}") from e
 
     if matched.empty:
-        # Fallback: return random 3 verses
-        fallback = df.sample(3)[verse_col].tolist()
-        return fallback
+        return df.sample(3)[verse_col].tolist()
     else:
         return matched.sample(min(3, len(matched)))[verse_col].tolist()

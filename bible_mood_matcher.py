@@ -1,36 +1,38 @@
 import pandas as pd
 import random
 
-def load_verses(file_path="englishBible.xlsx"):
-    try:
-        df = pd.read_excel(file_path)
-        df.dropna(how="all", inplace=True)
-        return df
-    except Exception as e:
-        print(f"Error loading Excel file: {e}")
-        return pd.DataFrame()
+def load_bible_data(file_path):
+    """
+    Load the Bible data from the Excel file.
+    Automatically detects the column containing verse text.
+    Returns the DataFrame and the name of the verse column.
+    """
+    df = pd.read_excel(file_path)
 
-def match_verses_by_mood(mood, df):
-    mood = mood.strip().lower()
-
-    # Automatically find the verse column
+    # Identify the column most likely containing the verse text
     verse_col = None
     for col in df.columns:
-        if "verse" in col.lower():
+        if "verse" in col.lower() or "text" in col.lower():
             verse_col = col
             break
 
     if not verse_col:
-        return ["❌ Could not find a column containing Bible verses. Please check the Excel file."]
+        raise ValueError("Could not find a column with verse text in the Excel file.")
 
-    # If 'Mood' column exists, filter using it first
-    if 'Mood' in df.columns:
-        matched = df[df['Mood'].str.lower().str.contains(mood, na=False)]
-    else:
-        # fallback: try to match mood in verse text
-        matched = df[df[verse_col].str.lower().str.contains(mood, na=False)]
+    return df, verse_col
+
+
+def match_verses_by_mood(mood, df, verse_col):
+    """
+    Match Bible verses based on a mood keyword.
+    If no match is found, return random verses.
+    """
+    # Case-insensitive search for mood in the verse text
+    matched = df[df[verse_col].str.lower().str.contains(mood.lower(), na=False)]
 
     if matched.empty:
-        return ["No specific match found. Here's a random verse: " + random.choice(df[verse_col].tolist())]
-
-    return matched[verse_col].sample(min(3, len(matched))).tolist()
+        # Fallback: return random 3 verses
+        fallback = df.sample(3)[verse_col].tolist()
+        return fallback
+    else:
+        return matched.sample(min(3, len(matched)))[verse_col].tolist()

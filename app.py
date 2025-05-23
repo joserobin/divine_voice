@@ -1,45 +1,52 @@
 import streamlit as st
-import random
 import openai
+import os
 
-# Your OpenAI secret key
+# Set page configuration
+st.set_page_config(page_title="Divine Voice - Personalized Bible Wisdom")
+
+# Title and subtitle
+st.title("📖 Divine Voice")
+st.subheader("Get personalized Bible verses with simple and powerful explanations.")
+
+# Get OpenAI API key from Streamlit secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Step 1: Mood → List of Verses
-mood_verse_map = {
-    "Happy": [
-        "Psalm 100:1-2 - Shout for joy to the Lord, all the earth.",
-        "Nehemiah 8:10 - The joy of the Lord is your strength.",
-        "Psalm 118:24 - This is the day the Lord has made; let us rejoice."
-    ],
-    "Anxious": [
-        "Philippians 4:6 - Do not be anxious about anything...",
-        "1 Peter 5:7 - Cast all your anxiety on Him because He cares for you.",
-        "John 14:27 - Peace I leave with you; do not let your hearts be troubled."
-    ],
-    "Lonely": [
-        "Deuteronomy 31:6 - God will never leave you nor forsake you.",
-        "Psalm 23:4 - You are with me.",
-        "Isaiah 41:10 - Do not fear, for I am with you."
-    ],
-    "Sad": [
-        "Revelation 21:4 - He will wipe every tear.",
-        "Psalm 34:18 - The Lord is close to the brokenhearted.",
-        "Matthew 5:4 - Blessed are those who mourn."
-    ]
-}
+# User form
+with st.form("user_form"):
+    name = st.text_input("👤 Enter your name")
+    age_group = st.selectbox("🎂 Select your age group", ["Kids (5–10)", "Teen (10–15)", "Youth (15–25)", "Adult (25–50)"])
+    occupation = st.selectbox("💼 You are a", ["Student", "Working Professional", "Retired"])
+    mood = st.selectbox("🧠 How are you feeling today?", ["Happy", "Anxious", "Sad", "Lonely", "Curious", "Thankful", "Depressed", "Lost", "Energetic", "Tired"])
+    submitted = st.form_submit_button("🙏 Get Verse")
 
-# Step 2: UI - Mood Selection
-st.title("Bible Verse Based on Your Mood 🙏")
-user_mood = st.selectbox("How are you feeling today?", list(mood_verse_map.keys()))
+# GPT Function
+def get_bible_response(name, age_group, occupation, mood):
+    prompt = f"""
+You are a kind and wise Christian mentor.
 
-# Step 3: Show verse options
-if user_mood:
-    verses = mood_verse_map[user_mood]
-    selected_verse = st.radio("Select a Bible verse that speaks to you:", verses)
+A person named {name}, who is a {occupation} in the {age_group} age group, is feeling {mood} today.
 
-    # Step 4: Generate explanation
-    if st.button("Get Spiritual Insight ✨"):
-        with st.spinner("Praying and thinking..."):
-            response = openai.ChatCompletion.create
+1. Suggest a suitable Bible verse for them.
+2. Provide a short, emotionally resonant explanation that is easy to understand for their age and life situation.
+3. Keep the tone compassionate and uplifting.
+    """
 
+    response = openai.ChatCompletion.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a helpful and loving Christian guide who explains Bible verses in an age-appropriate and compassionate way."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.8,
+        max_tokens=500
+    )
+
+    return response['choices'][0]['message']['content']
+
+# Output Section
+if submitted:
+    with st.spinner("✨ Fetching divine wisdom..."):
+        result = get_bible_response(name, age_group, occupation, mood)
+    st.markdown("### 📜 Here's a verse and message for you:")
+    st.markdown(result)

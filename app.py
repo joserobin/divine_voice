@@ -1,7 +1,7 @@
 import streamlit as st
 from openai import OpenAI
 
-# Initialize OpenAI client (use secret key via Streamlit Cloud secrets)
+# Initialize OpenAI client (secret key should be added via Streamlit Secrets)
 client = OpenAI()
 
 st.set_page_config(page_title="Divine Voice", layout="centered")
@@ -23,3 +23,9 @@ def get_bible_verse_and_explanation(name, age_group, occupation, mood):
         f"Act as a Christian guide. A user named {name}, who is a {occupation} in the {age_group} age group, "
         f"is feeling '{mood}'. Suggest a relevant Bible verse and provide a short explanation. "
         f"Make the explanation age-appropriate and easy to understand."
+    )
+
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "You are a compassionate and knowledgeable
